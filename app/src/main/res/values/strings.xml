@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">Consumables Tracker</string>
+    <string name="calls_label">Calls: </string>
+    <string name="calls_other_label">Other Calls: </string>
+    <string name="sms_label">SMS: </string>
+    <string name="remaining_label">Remaining: </string>
+    <string name="calls_rate">%1$.2f mins. ≈ %2$s %3$.2f</string>
+    <string name="sms_rate">%1$d ≈ %2$s %3$.2f</string>
+    <string name="rate">%1$s %2$.2f out of %3$.2f</string>
+</resources>
