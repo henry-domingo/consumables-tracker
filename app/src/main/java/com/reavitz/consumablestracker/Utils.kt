@@ -31,6 +31,8 @@ object Utils {
             else -> number
         }
 
+        if (cleanNumber.length < 5) return NETWORK_UNKNOWN
+
         val subNumber = cleanNumber.subSequence(0, 4)
         return when {
             NUMBERS_GLOBE.contains(subNumber) -> return NETWORK_GLOBE
