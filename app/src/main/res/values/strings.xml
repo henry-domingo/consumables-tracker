@@ -7,4 +7,6 @@
     <string name="calls_rate">%1$.2f mins. ≈ %2$s %3$.2f</string>
     <string name="sms_rate">%1$d ≈ %2$s %3$.2f</string>
     <string name="rate">%1$s %2$.2f out of %3$.2f</string>
+    <string name="title_activity_main2">MainActivity2</string>
+    <string name="sim_tab">SIM %d</string>
 </resources>
