@@ -8,6 +8,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.provider.CallLog
 import android.provider.CallLog.Calls.OUTGOING_TYPE
+import android.telephony.SubscriptionManager
 import android.telephony.TelephonyManager
 import androidx.appcompat.app.AppCompatActivity
 import androidx.loader.app.LoaderManager
@@ -22,6 +23,7 @@ import java.util.concurrent.TimeUnit
 class MainActivity : AppCompatActivity(), LoaderManager.LoaderCallbacks<Cursor> {
 
     private var simNumber = ""
+    private var simSubscriptionId = ""
     private val currency = "PHP" //Currency.getInstance(Locale("ph")).symbol
     private var isInstanceNew = true
 
@@ -105,7 +107,11 @@ class MainActivity : AppCompatActivity(), LoaderManager.LoaderCallbacks<Cursor> 
         )
     }
 
+    @SuppressLint("MissingPermission")
     override fun onCreateLoader(id: Int, args: Bundle?): Loader<Cursor> {
+        val subscriptionManager = getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE)
+                as? SubscriptionManager
+        simSubscriptionId = subscriptionManager?.activeSubscriptionInfoList?.get(0)?.iccId ?: ""
         val firstDayOfTheMonth = Calendar.getInstance()
         firstDayOfTheMonth.set(Calendar.DAY_OF_MONTH, 1)
         firstDayOfTheMonth.time
@@ -125,13 +131,23 @@ class MainActivity : AppCompatActivity(), LoaderManager.LoaderCallbacks<Cursor> 
                 } ?: throw Exception("Activity cannot be null")
             }
             else -> {//Calls
+                val freeNumber = when {
+                    checkNetwork(simNumber) == NETWORK_GLOBE -> "211"
+                    checkNetwork(simNumber) == NETWORK_SMART -> "*888"
+                    else -> ""
+                }
+
                 val where = "${CallLog.Calls.TYPE}='$OUTGOING_TYPE' " +
-                        "AND ${CallLog.Calls.DATE} >= ${firstDayOfTheMonth.time.time} "
+                        "AND ${CallLog.Calls.DATE} >= ${firstDayOfTheMonth.time.time} " +
+                        "AND ${CallLog.Calls.PHONE_ACCOUNT_ID}='$simSubscriptionId' " +
+                        "AND ${CallLog.Calls.NUMBER}!='$freeNumber' "
                 return (this@MainActivity as? Context)?.let { context ->
                     CursorLoader(
                         context,
                         CallLog.Calls.CONTENT_URI,
-                        arrayOf(CallLog.Calls.NUMBER, CallLog.Calls.DURATION),
+                        arrayOf(
+                            CallLog.Calls.NUMBER, CallLog.Calls.DURATION
+                        ),
                         where,
                         null,
                         CallLog.Calls.DATE + " DESC"
@@ -160,12 +176,6 @@ class MainActivity : AppCompatActivity(), LoaderManager.LoaderCallbacks<Cursor> 
                 consumable -= countSMS.toDouble()
             }
             1 -> {//Calls
-                val freeNumber = when {
-                    checkNetwork(simNumber) == NETWORK_GLOBE -> "211"
-                    checkNetwork(simNumber) == NETWORK_SMART -> "*888"
-                    else -> ""
-                }
-
                 var minutesNetworkOn = 0L
                 var minutesNetworkOff = 0L
 
@@ -173,8 +183,6 @@ class MainActivity : AppCompatActivity(), LoaderManager.LoaderCallbacks<Cursor> 
                     while (data?.moveToNext() == true) {
                         val number = data.getString(0)
                         val duration = data.getLong(1)
-
-                        if (number == freeNumber) continue
 
                         if (checkNetwork(simNumber) == checkNetwork(number)) {
                             minutesNetworkOn += duration
@@ -184,7 +192,7 @@ class MainActivity : AppCompatActivity(), LoaderManager.LoaderCallbacks<Cursor> 
                     }
                 }
                 val minutesOn = TimeUnit.SECONDS.toMinutes(minutesNetworkOn).toDouble()
-                val minutesOff = TimeUnit.SECONDS.toMinutes(minutesNetworkOn).toDouble()
+                val minutesOff = TimeUnit.SECONDS.toMinutes(minutesNetworkOff).toDouble()
 
                 //TODO configurable rates
                 val rateOn = minutesOn * 6.5
